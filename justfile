@@ -2,7 +2,7 @@
 
 project_name := "try-prefect2"
 # app_py := "src/Main.py"
-# server_port := "8080"
+server_port := "UNDEFINED"
 gcp_region := "asia-southeast2"
 
 set dotenv-load
@@ -19,9 +19,8 @@ dev-venv:
 	pip-compile requirements-dev.in
 	python3 -m venv .venv_dev_{{project_name}}
 	. .venv_dev_{{project_name}}/bin/activate
-	# pip install pip==18.1.0
 	python3 -m pip install --upgrade pip
-	pip install -r requirements.txt
+	pip install -r requirements-dev.txt
 	python -m ipykernel install --user --name .venv_dev_{{project_name}}
 	echo -e '\n' source .venv_dev_{{project_name}}/bin/activate '\n'
 
@@ -53,6 +52,7 @@ rm-dev-venv:
 	dvenv
 	rm -rf .venv_dev_{{project_name}}
 
+
 rm-deploy-venv:
 	#!/usr/bin/env bash
 	dvenv
@@ -66,8 +66,9 @@ test:
 
 run: 
 	#!/usr/bin/env bash
-    echo "Need to setup for non-app i.e. Prefect-friendly"    
-    # streamlit run {{app_py}} --server.port={{server_port}} --server.address=localhost
+	echo "Need to setup for non-app i.e. Prefect-friendly"    
+
+# streamlit run {{app_py}} --server.port={{server_port}} --server.address=localhost
 
 # Build and run app.py in a (local) Docker container
 
