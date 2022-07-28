@@ -1,0 +1,8 @@
+prefect
+pandas
+ipykernel
+prefect-slack
+# httpx
+# bs4
+# sqlite_utils 
+# dynaconf

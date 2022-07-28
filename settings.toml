@@ -1,0 +1,7 @@
+# [S3] Cloud Object Storage: https://console.scaleway.com
+ACCESS_KEY_ID = 'SCW5MSNHMS37P6Q0ZZV2'   # Credentials
+SECRET_ACCESS_TOML = '.secrets.toml'
+STORAGE_BUCKET_NAME = 'databooth-prefect'
+DEFAULT_ACL = 'public-read'
+REGION_NAME = 'fr-par'
+ENDPOINT_URL = 'https://s3.fr-par.scw.cloud'
