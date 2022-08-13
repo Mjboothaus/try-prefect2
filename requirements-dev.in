@@ -4,3 +4,6 @@ notebook
 prefect-slack
 autopep8
 pydantic
+pyarrow
+fastparquet
+openpyxl

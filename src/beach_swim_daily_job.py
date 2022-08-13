@@ -6,6 +6,7 @@
 # Migration to Prefect 2.0.x
 # See https://docs.prefect.io/migration-guide/
 
+import contextlib
 from datetime import timedelta
 
 import httpx
@@ -39,7 +40,7 @@ BEACHWATCH_FIELDS = {
     "bw-alert-text": "Alert"
 }
 
-@task
+#@task
 def retrieve_url(url):
     r = httpx.get(url)
     r.raise_for_status()
@@ -89,7 +90,7 @@ def scrape_beach_daily_data(beachmapp_html, beachwatch_fields):
     return get_all_data_for_beach(beach_soup, beachwatch_fields)
 
 
-@task
+#@task
 def create_beach_list(base_url, main_html, url_path, bypass):
     """
     Given the main page html, creates a list of the beach URLs from 
@@ -110,16 +111,16 @@ def create_beach_list(base_url, main_html, url_path, bypass):
 
 def write_daily_beach_data_local(all_beach_daily_data_df, write_local=False):
     if write_local is True:
-        data_filename = "../data/all_beach_daily_data_"
+        data_filename = "data/all_beach_daily_data_"
         data_parquet = data_filename.replace("data_", "data.parquet")
         data_xlsx = data_filename + pendulum.now().isoformat() + ".xlsx"
         data_csv = data_xlsx.replace(".xlsx", ".csv")
         print(f'Created: {data_csv}')
-        all_beach_daily_data_df.to_parquet(data_parquet)
+        #with contextlib.suppress(Exception):
+            #all_beach_daily_data_df.to_parquet(data_parquet)
         all_beach_daily_data_df.to_excel(data_xlsx, index=False)
-        all_beach_daily_data_df.to_csv(data_csv, index=False)
-
-        db = Database("../data/daily_beach_data_db.sqlite")
+            #all_beach_daily_data_df.to_csv(data_csv, index=False)
+        db = Database("data/daily_beach_data_db.sqlite")
         all_beach_daily_data_df.to_sql("beaches", con=db.conn, if_exists="append")
     else:
         bucket_name = "databooth-beach-swim"
@@ -128,12 +129,12 @@ def write_daily_beach_data_local(all_beach_daily_data_df, write_local=False):
         dataframe_to_csv_s3(s3, all_beach_daily_data_df, bucket_name, data_filename)
         print(f'Wrote data to s3://{bucket_name}/{data_filename}')
 
-        db = Database("../data/daily_beach_data_db.sqlite")
+        db = Database("data/daily_beach_data_db.sqlite")
         all_beach_daily_data_df.to_sql("beaches", con=db.conn, if_exists="append")
         print("Also wrote local SQLite DB: data/daily_beach_data_db.sqlite")
 
 
-@flow
+#@flow
 def create_all_beaches_list(base_url, bypass):
     base_html = retrieve_url(base_url)
     region_URLs = create_beach_list(
@@ -149,7 +150,7 @@ def create_all_beaches_list(base_url, bypass):
 
 
 
-@flow
+#@flow
 def get_daily_beach_data(beachwatch_fields, beaches_url_list, write_local):
     COLUMN_NAMES = ["Retrieved at"] + ["Region"] + \
         list(beachwatch_fields.values())
@@ -181,7 +182,7 @@ def get_daily_beach_data(beachwatch_fields, beaches_url_list, write_local):
 # )
 
 
-@flow(name="daily-beach-data-job")
+#@flow(name="daily-beach-data-job")
 def beach_data_daily_job():
     WRITE_LOCAL_FILE = True
     beaches_url_list = create_all_beaches_list(BEACHMAPP_BASE_URL, False)
