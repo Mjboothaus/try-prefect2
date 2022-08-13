@@ -11,6 +11,16 @@ set dotenv-load
 help:
   @just -l
 
+docs:
+	open https://docs.prefect.io/tutorials/first-steps/
+
+
+start-ui:
+	prefect orion start
+
+
+open-ui:
+	open http://127.0.0.1:4200
 
 # Create the local Python venv (.venv_{{project_name}}) and install requirements(.txt)
 

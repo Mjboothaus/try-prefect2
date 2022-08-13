@@ -1,8 +1,6 @@
 prefect
 pandas
-ipykernel
+notebook
 prefect-slack
-# httpx
-# bs4
-# sqlite_utils 
-# dynaconf
+autopep8
+pydantic
