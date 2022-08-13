@@ -13,19 +13,12 @@ import pandas as pd
 import pendulum
 import requests
 from bs4 import BeautifulSoup
-from prefect import flow, task
+from prefect import task, flow
+#from prefect.deployments import DeploymentSpec
+from prefect.orion.schemas.schedules import IntervalSchedule, RRuleSchedule
 from sqlite_utils import Database
 
-from src.scaleway_s3_storage import connect_to_s3, dataframe_to_csv_s3
-
-from prefect.deployments import DeploymentSpec
-from prefect.orion.schemas.schedules import IntervalSchedule, RRuleSchedule
-
-
-#from prefect.executors import LocalDaskExecutor
-#from prefect.schedules import Schedule
-#from prefect.schedules.clocks import IntervalClock
-#from prefect.utilities.notifications import slack_notifier
+from scaleway_s3_storage import connect_to_s3, dataframe_to_csv_s3
 
 
 BEACHMAPP_BASE_URL = "https://www.environment.nsw.gov.au/beachmapp"
@@ -46,28 +39,14 @@ BEACHWATCH_FIELDS = {
     "bw-alert-text": "Alert"
 }
 
-
+@task
 def retrieve_url(url):
     r = httpx.get(url)
     r.raise_for_status()
     return r.text
 
 
-def retrieve_url_requests(url):
-    """
-    Given a URL (string), retrieves html and
-    returns the html as a string.
-    """
-
-    html = requests.get(url)
-    if html.ok:
-        return html.text
-    else:
-        raise ValueError("{} could not be retrieved.".format(url))
-
-
 # Define various helper functions to parse the html pages to extract the data for each beach
-
 
 def get_beachwatch_data_for_class(beach_soup, classname, item_name):
     """
@@ -85,6 +64,7 @@ def get_beachwatch_data_for_class(beach_soup, classname, item_name):
     return (item.contents[0], item_name)
 
 
+
 def get_all_data_for_beach(beach_soup, beachwatch_fields):
     beach_data = []
     for classname in beachwatch_fields:
@@ -95,6 +75,7 @@ def get_all_data_for_beach(beach_soup, beachwatch_fields):
             item_name = beachwatch_fields[classname]
         beach_data.append((item, item_name))
     return beach_data
+
 
 
 def scrape_beach_daily_data(beachmapp_html, beachwatch_fields):
@@ -108,6 +89,7 @@ def scrape_beach_daily_data(beachmapp_html, beachwatch_fields):
     return get_all_data_for_beach(beach_soup, beachwatch_fields)
 
 
+@task
 def create_beach_list(base_url, main_html, url_path, bypass):
     """
     Given the main page html, creates a list of the beach URLs from 
@@ -126,7 +108,32 @@ def create_beach_list(base_url, main_html, url_path, bypass):
     ]
 
 
-@task
+def write_daily_beach_data_local(all_beach_daily_data_df, write_local=False):
+    if write_local is True:
+        data_filename = "../data/all_beach_daily_data_"
+        data_parquet = data_filename.replace("data_", "data.parquet")
+        data_xlsx = data_filename + pendulum.now().isoformat() + ".xlsx"
+        data_csv = data_xlsx.replace(".xlsx", ".csv")
+        print(f'Created: {data_csv}')
+        all_beach_daily_data_df.to_parquet(data_parquet)
+        all_beach_daily_data_df.to_excel(data_xlsx, index=False)
+        all_beach_daily_data_df.to_csv(data_csv, index=False)
+
+        db = Database("../data/daily_beach_data_db.sqlite")
+        all_beach_daily_data_df.to_sql("beaches", con=db.conn, if_exists="append")
+    else:
+        bucket_name = "databooth-beach-swim"
+        data_filename = "all_beach_daily_data.csv"
+        s3 = connect_to_s3()
+        dataframe_to_csv_s3(s3, all_beach_daily_data_df, bucket_name, data_filename)
+        print(f'Wrote data to s3://{bucket_name}/{data_filename}')
+
+        db = Database("../data/daily_beach_data_db.sqlite")
+        all_beach_daily_data_df.to_sql("beaches", con=db.conn, if_exists="append")
+        print("Also wrote local SQLite DB: data/daily_beach_data_db.sqlite")
+
+
+@flow
 def create_all_beaches_list(base_url, bypass):
     base_html = retrieve_url(base_url)
     region_URLs = create_beach_list(
@@ -141,30 +148,8 @@ def create_all_beaches_list(base_url, bypass):
     return [[region, item] for region, sublist in all_beaches for item in sublist]
 
 
-def write_daily_beach_data_local(all_beach_daily_data_df, write_local=False):
-    if write_local is True:
-        data_filename = "../data/all_beach_daily_data_"
-        data_parquet = data_filename.replace("data_", "data.parquet")
-        data_xlsx = data_filename + pendulum.now().isoformat() + ".xlsx"
-        data_csv = data_xlsx.replace(".xlsx", ".csv")
-        print(f'Created: {data_csv}')
-        all_beach_daily_data_df.to_parquet(data_parquet)
-        all_beach_daily_data_df.to_excel(data_xlsx, index=False)
-        all_beach_daily_data_df.to_csv(data_csv, index=False)
 
-        db = Database("../data/daily_beach_data_db.sqlite")
-        all_beach_daily_data_df.to_sql(
-            "beaches", con=db.conn, if_exists="append")
-    else:
-        bucket_name = "databooth-beach-swim"
-        data_filename = "all_beach_daily_data.csv"
-        s3 = connect_to_s3()
-        dataframe_to_csv_s3(s3, all_beach_daily_data_df,
-                            bucket_name, data_filename)
-        print(f'Wrote data to s3://{bucket_name}/{data_filename}')
-
-
-@task
+@flow
 def get_daily_beach_data(beachwatch_fields, beaches_url_list, write_local):
     COLUMN_NAMES = ["Retrieved at"] + ["Region"] + \
         list(beachwatch_fields.values())
@@ -188,45 +173,24 @@ def get_daily_beach_data(beachwatch_fields, beaches_url_list, write_local):
 
 # Define Prefect job - schedule, executor and Flow of tasks
 
-DeploymentSpec(
-    flow_location="/Developer/workflows/my_flow.py",
-    name="my-first-deployment",
-    parameters={"nums": [1, 2, 3, 4]}, 
-    schedule=IntervalSchedule(interval=timedelta(minutes=15)),
-)
+# DeploymentSpec(
+#     flow_location="/Developer/workflows/my_flow.py",
+#     name="my-first-deployment",
+#     parameters={"nums": [1, 2, 3, 4]}, 
+#     schedule=IntervalSchedule(interval=timedelta(minutes=15)),
+# )
 
 
-@flow(name="daily-beach-data-p2")
+@flow(name="daily-beach-data-job")
 def beach_data_daily_job():
-    WRITE_LOCAL = False
+    WRITE_LOCAL_FILE = True
     beaches_url_list = create_all_beaches_list(BEACHMAPP_BASE_URL, False)
-    all_beach_daily_data_df = get_daily_beach_data(
-        BEACHWATCH_FIELDS, beaches_url_list, WRITE_LOCAL)
+    return get_daily_beach_data(BEACHWATCH_FIELDS, beaches_url_list, WRITE_LOCAL_FILE)
 
 
-schedule = IntervalSchedule(anchor_date=pendulum.datetime(2022, 2, 26, 7, 40, 0, tz="Australia/Sydney"))
+beach_data_daily_job()
 
-schedule.get_dates(n=10)
+# schedule = IntervalSchedule(anchor_date=pendulum.datetime(2022, 2, 26, 7, 40, 0, tz="Australia/Sydney"))
+# schedule.get_dates(n=10)
 
 # TODO: Check that the data has actually been updated "NN minutes ago" from the "Data last updated" field
-
-# test_schedule = Schedule(
-#     clocks=[
-#         IntervalClock(
-#             interval=timedelta(minutes=9),
-#             start_date=pendulum.now(),
-#             end_date=pendulum.now().add(minutes=21)
-#         )
-#     ]
-# )
-
-
-# every_day_at_740am_sydney = Schedule(
-#     clocks=[
-#         IntervalClock(
-#             interval=timedelta(days=1),
-#             start_date=pendulum.datetime(
-#                 2022, 2, 26, 7, 40, 0, tz="Australia/Sydney"),
-#         )
-#     ]
-# )
