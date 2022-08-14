@@ -1,5 +1,7 @@
-# Scaleway S3 storage
+# Scaleway S3 storage functions
+
 # Credentials stored in `settings.toml` and `.secrets.toml`
+
 # Note: the `Bucket Visibility` is set to public (which specifies whether the list of 
 #       objects in the bucket is publicly visible or not; it does not affect the visibility
 #       of objects themselves - a file (object) uploaded to a public bucket is private by default).
@@ -20,6 +22,7 @@ REGION_NAME = settings.REGION_NAME
 ENDPOINT_URL = settings.ENDPOINT_URL
 
 SECRETS_FILE = ".secrets.toml"
+
 if (
     Path(SECRETS_FILE).exists() is True
     or Path(f'../{SECRETS_FILE}').exists() is True  # if being run from notebooks subdirectory
@@ -64,18 +67,12 @@ def upload_file_to_s3(s3, file_name, bucket_name, object_name=None):
         return False
     return True
 
+
 # c.f. https://towardsdatascience.com/reading-and-writing-files-from-to-amazon-s3-with-pandas-ccaf90bfe86c
 
 def dataframe_to_csv_s3(s3, df, bucket_name, filename):
     with io.StringIO() as csv_buffer:
         df.to_csv(csv_buffer, index=False)
-        response = s3.put_object(
-            Bucket=bucket_name, Key=filename, Body=csv_buffer.getvalue()
-        )
+        response = s3.put_object(Bucket=bucket_name, Key=filename, Body=csv_buffer.getvalue())
         status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
-        if status == 200:
-            return True
-            #print(f"Successful S3 put_object response. Status - {status}")
-        else:
-            #print(f"Unsuccessful S3 put_object response. Status - {status}")
-            return False
+        return status == 200
