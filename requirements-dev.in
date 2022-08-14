@@ -1,9 +1,10 @@
-prefect
-pandas
-notebook
-prefect-slack
 autopep8
-pydantic
-pyarrow
 fastparquet
+notebook
 openpyxl
+pandas
+prefect
+prefect-slack
+pyarrow
+pydantic
+sqlite_utils

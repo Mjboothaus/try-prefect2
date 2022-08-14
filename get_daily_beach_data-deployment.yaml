@@ -1,0 +1,41 @@
+###
+### A complete description of a Prefect Deployment for flow 'Main flow: get daily beach data'
+###
+name: beach_daily
+description: null
+version: 693a9635c6ac0f8231200ae3b290ced7
+tags:
+- test
+parameters: {}
+schedule: null
+infra_overrides: {}
+infrastructure:
+  type: process
+  env: {}
+  labels: {}
+  name: null
+  command:
+  - python
+  - -m
+  - prefect.engine
+  stream_output: true
+###
+### DO NOT EDIT BELOW THIS LINE
+###
+flow_name: 'Main flow: get daily beach data'
+manifest_path: null
+storage: null
+path: /Users/mjboothaus/code/github/mjboothaus/try-prefect2
+entrypoint: src/beach_swim_daily_job.py:get_daily_beach_data
+parameter_openapi_schema:
+  title: Parameters
+  type: object
+  properties:
+    beachwatch_fields:
+      title: beachwatch_fields
+    beaches_url_list:
+      title: beaches_url_list
+  required:
+  - beachwatch_fields
+  - beaches_url_list
+  definitions: null

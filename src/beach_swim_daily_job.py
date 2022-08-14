@@ -1,12 +1,13 @@
 
-# Auto-retrieve daily beach data (Prefect) - non-mapped
+# Retrieve daily beach data (Prefect)
 #
-# Automated daily job (in Prefect) that runs just after 7:30AM Sydney time when the pages are updated each day.
+# Automated daily job (in Prefect) that runs just after 7:30AM Sydney time 
+# when the pages are updated each day.
 
 # Migration to Prefect 2.0.x
 # See https://docs.prefect.io/migration-guide/
 
-from datetime import timedelta
+# from datetime import timedelta
 
 import httpx
 import pandas as pd
@@ -19,9 +20,15 @@ from sqlite_utils import Database
 
 from scaleway_s3_storage import connect_to_s3, dataframe_to_csv_s3
 
-import sys
-sys.setrecursionlimit(3000)
+from sys import getrecursionlimit, setrecursionlimit
 
+# getrecursionlimit() is returning 1000 (default)
+
+RECURSION_LIMIT = 2000
+setrecursionlimit(RECURSION_LIMIT)
+
+# See: https://stackoverflow.com/questions/67986157/multiprocessing-how-to-debug-pickle-picklingerror-could-not-pickle-object-as
+#      Getting exception when recursion limit not set
 
 BEACHMAPP_BASE_URL = "https://www.environment.nsw.gov.au/beachmapp"
 
