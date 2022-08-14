@@ -72,6 +72,16 @@ test:
     pytest
 
 
+run-job:
+	#!/usr/bin/env bash
+	start=`date +%s`
+	python src/beach_swim_daily_job.py
+	end=`date +%s`
+	runtime=$((end-start))
+	echo ""
+	echo $runtime seconds to run job
+	echo ""
+
 # Run notebook locally
 
 run: 
