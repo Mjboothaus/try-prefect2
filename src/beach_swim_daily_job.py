@@ -10,6 +10,7 @@
 # from datetime import timedelta
 
 from typing import List
+from xmlrpc.client import boolean
 import httpx
 import pandas as pd
 import pendulum
@@ -153,7 +154,7 @@ def write_daily_beach_data_local(all_daily_data_df, write_local=False):
 # Subflow
 
 @flow(name="Create all beaches list")
-def create_all_beaches_list(base_url, bypass):
+def create_all_beaches_list(base_url: str, bypass: bool) -> List:
     base_html = retrieve_url(base_url)
     region_URLs = create_beach_list(
         base_url, base_html, "beachmapp/Beaches", bypass)
@@ -200,7 +201,10 @@ def beach_data_daily_job():
     beaches_url_list = create_all_beaches_list(BEACHMAPP_BASE_URL, False)
     all_daily_data_df = get_daily_beach_data(BEACHWATCH_FIELDS, beaches_url_list)
     try:
-        write_daily_beach_data_local(all_daily_data_df, WRITE_LOCAL_FILE)
+        if N_BEACH_TESTING == 160:
+            write_daily_beach_data_local(all_daily_data_df, WRITE_LOCAL_FILE)
+        else:
+            print("\nSkipping data write: Test run only\n")
     except Exception as e:
         print(f"\nData write error: {e}\n")
 
