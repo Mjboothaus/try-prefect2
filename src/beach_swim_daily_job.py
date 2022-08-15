@@ -9,6 +9,7 @@
 
 # from datetime import timedelta
 
+from typing import List
 import httpx
 import pandas as pd
 import pendulum
@@ -48,10 +49,18 @@ BEACHWATCH_FIELDS = {
     "bw-alert-text": "Alert"
 }
 
-@task
+@task(retries=3, retry_delay_seconds=11)
 def retrieve_url(url):
     with httpx.Client() as client:
         r = client.get(url)
+        r.raise_for_status()
+    return r.text
+
+# TODO: See if this actually works instead of retrieve_url above
+#@task(retries=3, retry_delay_seconds=11)
+async def async_retrieve_url(url):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(url)
         r.raise_for_status()
     return r.text
 
@@ -160,16 +169,17 @@ def create_all_beaches_list(base_url, bypass):
 # TODO: Could cache list of all beaches (as usually unchanged) and re-use
 #       Although this doesn't take long to run
 
-N_BEACH_TEST = 160   # Only get data for this number of beaches for testing
-                     # instead of all 160
+N_BEACH_TESTING = 160
 
-@flow(name="Main flow: get daily beach data")
-def get_daily_beach_data(beachwatch_fields, beaches_url_list):
+# Only get data for this number of beaches for testing (instead of all 160)
+
+@flow(name="Get daily beach data")
+def get_daily_beach_data(beachwatch_fields: dict, beaches_url_list: List) -> pd.DataFrame:
     COLUMN_NAMES = ["Retrieved"] + ["Region"] + \
         list(beachwatch_fields.values())
     all_daily_data_df = pd.DataFrame(columns=COLUMN_NAMES)
 
-    for region, beach_url in beaches_url_list[:N_BEACH_TEST]:
+    for region, beach_url in beaches_url_list[:N_BEACH_TESTING]:
         # print(f"\n Beach: {beach_url}\n")
         beachmapp_html = retrieve_url(beach_url)
         beach_data = scrape_beach_daily_data(beachmapp_html, beachwatch_fields)
@@ -184,9 +194,9 @@ def get_daily_beach_data(beachwatch_fields, beaches_url_list):
 
 # Define Prefect main flow
 
-@flow(name="daily-beach-data-job")
+@flow(name="Main flow: daily-beach-data-job")
 def beach_data_daily_job():
-    WRITE_LOCAL_FILE = True
+    WRITE_LOCAL_FILE = False
     beaches_url_list = create_all_beaches_list(BEACHMAPP_BASE_URL, False)
     all_daily_data_df = get_daily_beach_data(BEACHWATCH_FIELDS, beaches_url_list)
     try:
