@@ -76,7 +76,7 @@ start-agent tag_name:
 	prefect agent start --tag {{tag_name}}
 
 
-run-job-local-terminal:
+run-job-local:
 	#!/usr/bin/env bash
 	start=`date +%s`
 	python src/beach_swim_daily_job.py
