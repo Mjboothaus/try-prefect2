@@ -20,7 +20,7 @@ from prefect import task, flow
 #from prefect.orion.schemas.schedules import IntervalSchedule
 from sqlite_utils import Database
 
-from scaleway_s3_storage import connect_to_s3, dataframe_to_csv_s3
+from scaleway_s3_storage import connect_to_s3, dataframe_to_csv_s3, upload_file_to_s3
 
 from sys import getrecursionlimit, setrecursionlimit
 
@@ -147,9 +147,18 @@ def write_daily_beach_data_local(all_daily_data_df, write_local=False):
         print(f"\nWrote data to s3://{bucket_name}/{data_filename}\n")
 
     # Write db locally in both cases
-    db = Database("data/daily_beach_data_db.sqlite")
+    SQLITE_DB_PATH = "data/daily_beach_data_db.sqlite"
+    db = Database(SQLITE_DB_PATH)
     all_daily_data_df.to_sql("beaches", con=db.conn, if_exists="append")
-    print("\nAlso wrote local SQLite DB: data/daily_beach_data_db.sqlite\n")
+    print(f"\nAlso wrote local SQLite DB: {SQLITE_DB_PATH}\n")
+
+    # Also upload SQLite DB to S3
+    s3 = connect_to_s3()
+    bucket_name = "databooth-beach-swim"
+    sqlite_filename = SQLITE_DB_PATH
+    if upload_file_to_s3(s3, sqlite_filename, bucket_name):
+        print(f"Uploaded {SQLITE_DB_PATH} to s3://{bucket_name}/{sqlite_filename}")
+
 
 # Subflow
 
@@ -199,7 +208,9 @@ def get_daily_beach_data(beachwatch_fields: dict, beaches_url_list: List) -> pd.
 def beach_data_daily_job():
     WRITE_LOCAL_FILE = False
     beaches_url_list = create_all_beaches_list(BEACHMAPP_BASE_URL, False)
+    print(type(beaches_url_list))
     all_daily_data_df = get_daily_beach_data(BEACHWATCH_FIELDS, beaches_url_list)
+    print(type(all_daily_data_df))
     try:
         if N_BEACH_TESTING == 160:
             write_daily_beach_data_local(all_daily_data_df, WRITE_LOCAL_FILE)
