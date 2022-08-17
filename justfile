@@ -20,7 +20,7 @@ start-agent tag_name:
 	prefect agent start --tag {{tag_name}}
 	# e.g. tag = macbook_air_m1_2020
 	# https://docs.prefect.io/concepts/work-queues/#agent-configuration
-	
+
 
 start-ui:
 	prefect orion start
@@ -31,26 +31,20 @@ open-ui:
 
 # Create the local Python venv (.venv_{{project_name}}) and install requirements(.txt)
 
-dev-venv:
+venv dev_deploy:
 	#!/usr/bin/env bash
-	pip-compile requirements-dev.in
-	python3 -m venv .venv_dev_{{project_name}}
-	. .venv_dev_{{project_name}}/bin/activate
+	pip-compile requirements-{{dev_deploy}}.in
+	python3 -m venv .venv_{{dev_deploy}}_{{project_name}}
+	. .venv_{{dev_deploy}}_{{project_name}}/bin/activate
 	python3 -m pip install --upgrade pip
-	pip install -r requirements-dev.txt
-	python -m ipykernel install --user --name .venv_dev_{{project_name}}
-	echo -e '\n' source .venv_dev_{{project_name}}/bin/activate '\n'
+	pip install -r requirements-{{dev_deploy}}.txt
+	python -m ipykernel install --user --name .venv_{{dev_deploy}}_{{project_name}}
+	echo -e '\n' source .venv_{{dev_deploy}}_{{project_name}}/bin/activate '\n'
 
 
-# Note: no Jupyter or pytest etc in deploy
-deploy-venv:
-	#!/usr/bin/env bash
-	pip-compile requirements-deploy.in -o requirements-deploy.txt
-	python3 -m venv .venv_deploy_{{project_name}}
-	. .venv_deploy_{{project_name}}/bin/activate
-	python3 -m pip install --upgrade pip
-	pip install -r requirements-deploy.txt
-	echo -e '\n' source .venv_deploy_{{project_name}}/bin/activate '\n'
+activate dev_deploy:
+	#!/usr/bin/env zsh
+	echo -e '\n' source .venv_{{dev_deploy}}_{{project_name}}/bin/activate '\n'
 
 
 update-dev-reqs:
