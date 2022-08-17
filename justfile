@@ -11,9 +11,16 @@ set dotenv-load
 help:
   @just -l
 
+
 docs:
 	open https://docs.prefect.io/tutorials/first-steps/
 
+
+start-agent tag_name:
+	prefect agent start --tag {{tag_name}}
+	# e.g. tag = macbook_air_m1_2020
+	# https://docs.prefect.io/concepts/work-queues/#agent-configuration
+	
 
 start-ui:
 	prefect orion start
@@ -70,10 +77,6 @@ rm-deploy-venv:
 
 test:
     pytest
-
-
-start-agent tag_name:
-	prefect agent start --tag {{tag_name}}
 
 
 run-job-local:
