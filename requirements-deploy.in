@@ -1,8 +1,10 @@
-prefect
+bs4
+fastparquet
+openpyxl
 pandas
-ipykernel
-prefect-slack
-# httpx
-# bs4
-# sqlite_utils 
-# dynaconf
+#pendulum
+prefect
+# prefect-slack
+pyarrow
+pydantic
+sqlite_utils

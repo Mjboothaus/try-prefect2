@@ -10,7 +10,6 @@
 # from datetime import timedelta
 
 from typing import List
-from xmlrpc.client import boolean
 import httpx
 import pandas as pd
 import pendulum
@@ -233,13 +232,22 @@ if __name__ == "__main__":
 
 
 
-# TODO: Below not using Deployment / Schedule as yet
+# TODO: Below not using Deployment / Schedule as yet - see example:
 
-# DeploymentSpec(
-#     flow_location="/Users/mjboothaus/code/github/mjboothaus/try-prefect2/src/beach_swim_daily_job.py",
-#     name="my-first-deployment",
-#     parameters={"nums": [1, 2, 3, 4]}, 
-#     schedule=IntervalSchedule(interval=timedelta(minutes=15)),)
+# See: https://www.prefect.io/guide/blog/orchestrate-your-data-science-project-with-prefect-2-0/#ScheduleYourFlows
 
-# schedule = IntervalSchedule(anchor_date=pendulum.datetime(2022, 2, 26, 7, 40, 0, tz="Australia/Sydney"))
-# schedule.get_dates(n=10)
+""" 
+schedule = IntervalSchedule(
+    interval=timedelta(days=1),
+    anchor_date=pendulum.datetime(
+        2022, 6, 15, 10, 29, 0, tz="America/Chicago"
+    ),
+)
+DeploymentSpec(
+    name="pet-flow-dev",
+    flow_location="./development.py",
+    flow_name="development",
+    schedule=schedule,
+    flow_runner=SubprocessFlowRunner(),
+    tags=["dev"],
+) """

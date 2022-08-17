@@ -29,6 +29,10 @@ start-ui:
 open-ui:
 	open http://127.0.0.1:4200
 
+port-process port:
+	sudo lsof -i :{{port}}
+
+
 # Create the local Python venv (.venv_{{project_name}}) and install requirements(.txt)
 
 venv dev_deploy:
@@ -39,6 +43,7 @@ venv dev_deploy:
 	python3 -m pip install --upgrade pip
 	pip install -r requirements-{{dev_deploy}}.txt
 	python -m ipykernel install --user --name .venv_{{dev_deploy}}_{{project_name}}
+	pip install -U prefect
 	echo -e '\n' source .venv_{{dev_deploy}}_{{project_name}}/bin/activate '\n'
 
 
