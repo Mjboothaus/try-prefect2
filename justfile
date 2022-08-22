@@ -14,6 +14,8 @@ help:
 
 docs:
 	open https://docs.prefect.io/tutorials/first-steps/
+	open https://orion-docs.prefect.io/getting-started/overview/
+	open https://orion-docs.prefect.io/concepts/overview/
 
 
 start-agent tag_name:
@@ -29,8 +31,13 @@ start-ui:
 open-ui:
 	open http://127.0.0.1:4200
 
+
 port-process port:
 	sudo lsof -i :{{port}}
+
+
+version: (activate "dev")
+	prefect --version
 
 
 # Create the local Python venv (.venv_{{project_name}}) and install requirements(.txt)
